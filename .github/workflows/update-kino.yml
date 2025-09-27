@@ -22,9 +22,10 @@ jobs:
       - name: Install dependencies
         run: pip install pandas openpyxl requests
 
-      - name: Download latest Excel
-        run: |
-          curl -L "https://www.loteria.cl/loteriaweb/estadisticas/kino/" -o kino.xlsx
+- name: Download latest Excel
+  run: |
+    curl -L "https://www.loteria.cl/loteriaweb/estadisticas/genxlskino?" -o kino.xlsx
+
 
       - name: Convert Excel to JSON
         run: |
