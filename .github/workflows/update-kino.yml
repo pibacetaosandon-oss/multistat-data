@@ -1,0 +1,53 @@
+name: Update Kino JSON
+
+on:
+  schedule:
+    - cron: "0 12 * * 3"   # todos los miércoles 12:00 UTC (ajusta a tu zona horaria si quieres)
+  workflow_dispatch:        # permite ejecutarlo manualmente
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: pip install pandas openpyxl requests
+
+      - name: Download latest Excel
+        run: |
+          curl -L "https://www.loteria.cl/loteriaweb/estadisticas/kino/" -o kino.xlsx
+
+      - name: Convert Excel to JSON
+        run: |
+          python - << 'EOF'
+          import pandas as pd, json
+          df = pd.read_excel("kino.xlsx")
+          df = df.dropna(how="all")
+          data = []
+          for _, row in df.iterrows():
+              numeros = [int(x) for x in row[2:].tolist() if pd.notna(x)]
+              data.append({
+                  "sorteo": int(row[0]),
+                  "fecha": str(row[1])[:10],
+                  "numeros": numeros
+              })
+          with open("kino_historico_multistat.json", "w", encoding="utf-8") as f:
+              json.dump(data, f, ensure_ascii=False, indent=2)
+          EOF
+
+      - name: Commit and push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add kino_historico_multistat.json
+          git commit -m "Update Kino histórico [skip ci]" || echo "No changes"
+          git push
